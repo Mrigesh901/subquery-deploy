@@ -1,0 +1,55 @@
+version: "3"
+
+networks:
+  subquery-net:
+    driver: bridge
+
+volumes:
+  subquery_Index_node:
+
+services:
+  subquery-index-node:
+    image: subquerynetwork/subql-node-substrate:latest
+    restart: unless-stopped
+    environment:
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
+      DB_DATABASE: ${POSTGRES_DB}
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PORT: ${POSTGRES_PORT}
+    volumes:
+      - subquery_Index_node:/app
+    command:
+      - --subquery=ipfs://${SUBQUERY_IPFS}
+      - --db-schema=${SUBQUERY_NAME}
+      - --batch-size=${SUBQUERY_BATCH_SIZE}
+      - --unfinalized-blocks=true
+      - --ipfs=${IPFS_URL}
+      - --network-endpoint=${RPC_ENDPOINT}
+      - --subscription=true
+      - --log-level=debug
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://subquery-index-node:3000/ready"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    networks:
+      - subquery-net
+
+  subquery-query-node:
+    image: subquerynetwork/subql-query:latest
+    ports:
+      - 3001:3000
+    restart: always
+    environment:
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
+      DB_DATABASE: ${POSTGRES_DB}
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PORT: ${POSTGRES_PORT}
+    command:
+      - --name=${SUBQUERY_NAME}
+      - --playground
+      - --indexer=http://subquery-index-node:3000
+    networks:
+      - subquery-net
