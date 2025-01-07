@@ -3,4 +3,4 @@
 set -o allexport; 
 source .env;
 set +o allexport; 
-docker-compose -f compose-prerequisite.yaml up -d --build $@
+docker compose -f compose-prerequisite.yaml up -d --build $@
